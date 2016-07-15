@@ -1,0 +1,70 @@
+apt-get install openvpn easy-rsa conntrack
+cp -a /usr/share/easy-rsa /etc/openvpn
+cd /etc/openvpn/easy-rsa
+vi vars
+source ./vars
+./clean-all
+./build-ca
+./build-key-server <SERVER_CN-NAME>
+./build-key <CLIENT_CN-NAME>
+cp /etc/openvpn/easy-rsa/keys/ca.crt /etc/openvpn/
+cp /etc/openvpn/easy-rsa/keys/server01.crt /etc/openvpn/
+cp /etc/openvpn/easy-rsa/keys/server01.key /etc/openvpn/
+openssl dhparam -out /etc/openvpn/dh1024.pem 1024
+!!! copy & edit sample config from /usr/share/doc/openvpn/examples/sample-config-files/
+!
+!!! set net.ipv4.ip_forward=1 in /etc/sysctl.conf
+!
+sysctl -p /etc/sysctl.conf
+
+
+!
+! Sample server config file :-
+!
+port 1194
+proto udp
+dev tun
+ca ca.crt
+cert AWS01.crt
+key AWS01.key  # This file should be kept secret
+dh dh1024.pem
+server 10.8.0.0 255.255.255.0
+ifconfig-pool-persist ipp.txt
+push "redirect-gateway def1 bypass-dhcp bypass-dns"
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
+keepalive 10 120
+comp-lzo
+persist-key
+persist-tun
+status openvpn-status.log
+verb 3
+
+!
+! Sample client config file :-
+!
+client
+dev tun
+proto udp
+remote 54.183.109.55 1194
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+ca ca.crt
+cert client01.crt
+key client01.key
+ns-cert-type server
+comp-lzo
+verb 3
+script-security 2
+up /etc/openvpn/update-resolv-conf
+down /etc/openvpn/update-resolv-conf
+
+!
+! sample iptables to enable NAT
+!
+iptables -A FORWARD -o eth0 -i tun0 -s 10.8.0.0/24 -m conntrack --ctstate NEW -j ACCEPT
+iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+iptables -t nat -F POSTROUTING
+iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE

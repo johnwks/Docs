@@ -1,0 +1,14 @@
+To configure Windows VM to use RTC on Linux host based on GMT/UTC time.
+
+In KVM virt XML :-
+
+<clock offset='utc'>
+    <timer name='rtc' tickpolicy='catchup'/>
+    <timer name='pit' tickpolicy='delay'/>
+    <timer name='hpet' present='no'/>
+</clock>
+
+
+In Windows PC :-
+
+bcdedit /set USEPLATFORMCLOCK on

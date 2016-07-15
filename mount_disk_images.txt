@@ -1,0 +1,8 @@
+Mount VDI/qcow2 images :-
+
+modprobe nbd
+qemu-nbd -c /dev/nbd0 <image-file>
+lsblk
+mount /dev/nbd0pXXX /mnt
+umount /mnt
+qemu-nbd -d /dev/nbd0

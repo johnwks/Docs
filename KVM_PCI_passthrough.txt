@@ -1,0 +1,117 @@
+Sample script to start KVM with PCI passthrough (GPU/Video card)
+- UEFI based.
+- virtio for storage & network.
+- Nvidia GPU (GTX-960) - need "kvm=off" to install Nvidia drivers in Windows.
+- PCI passthrough for nvidia GPU+audio and PCIe USB card.
+- USB passthrough for Logitech keyboard+mouse and CSR Bluetooth dongle.
+
+vfio-001.cfg
+=============
+0000:01:00.0
+0000:01:00.1
+0000:03:00.0
+
+
+start-kvm.sh (Windows10 PC)
+==============
+#!/bin/sh
+
+configfile=vfio-001.cfg
+
+vfiobind() {
+    dev="$1"
+        vendor=$(cat /sys/bus/pci/devices/$dev/vendor)
+        device=$(cat /sys/bus/pci/devices/$dev/device)
+        if [ -e /sys/bus/pci/devices/$dev/driver ]; then
+                echo $dev > /sys/bus/pci/devices/$dev/driver/unbind
+        fi
+        echo $vendor $device > /sys/bus/pci/drivers/vfio-pci/new_id
+
+}
+
+modprobe vfio-pci
+
+cat $configfile | while read line;do
+    echo $line | grep ^# >/dev/null 2>&1 && continue
+        vfiobind $line
+done
+
+tunctl -t tap0
+/etc/qemu-ifup tap0
+
+qemu-system-x86_64 -enable-kvm -M pc-i440fx-wily -m 8192 \
+-cpu host,kvm=off -smp 4,sockets=1,cores=4,threads=1 \
+-rtc base=localtime,clock=vm,driftfix=slew \
+-bios /usr/share/ovmf/OVMF.fd \
+-drive file=OVMF_CODE.fd,if=pflash,format=raw,unit=0,readonly=on \
+-drive file=OVMF_VARS.fd,if=pflash,format=raw,unit=1,readonly=on \
+-vga none \
+-soundhw hda \
+-device vfio-pci,host=01:00.0,id=pci-nvidia,bus=pci.0,addr=0x9 \
+-device vfio-pci,host=01:00.1,id=pci-nvidia-audio,bus=pci.0,addr=0xa \
+-device vfio-pci,host=03:00.0,id=pci-usb,bus=pci.0,addr=0xb \
+-drive file=HDD-01.qcow2,format=qcow2,if=virtio,id=hdd01 \
+-drive file=HDD-02.qcow2,format=qcow2,if=virtio,id=hdd02 \
+-drive file=HDD-03.qcow2,format=qcow2,if=virtio,id=hdd03 \
+-usb -usbdevice host:046d:c52b \
+-usb -usbdevice host:0a12:0001 \
+-netdev tap,id=net0,ifname=tap0,script=no,downscript=no,vhost=on -device virtio-net-pci,netdev=net0,mac=XX:XX:XX:XX:XX:XX \
+-boot menu=on
+
+tunctl -d tap0
+
+exit 0
+
+
+start-kvm.sh (OS X 10.11)
+==============
+#!/bin/sh
+
+configfile=vfio-001.cfg
+
+vfiobind() {
+    dev="$1"
+        vendor=$(cat /sys/bus/pci/devices/$dev/vendor)
+        device=$(cat /sys/bus/pci/devices/$dev/device)
+        if [ -e /sys/bus/pci/devices/$dev/driver ]; then
+                echo $dev > /sys/bus/pci/devices/$dev/driver/unbind
+        fi
+        echo $vendor $device > /sys/bus/pci/drivers/vfio-pci/new_id
+
+}
+
+modprobe vfio-pci
+
+cat $configfile | while read line;do
+    echo $line | grep ^# >/dev/null 2>&1 && continue
+        vfiobind $line
+done
+
+tunctl -t tap0
+/etc/qemu-ifup tap0
+
+# Required for OS X 
+echo 1 > /sys/module/kvm/parameters/ignore_msrs
+
+qemu-system-x86_64 -enable-kvm -m 4096 \
+-cpu core2duo,kvm=off,vendor=GenuineIntel \
+-machine pc-q35-2.5,accel=kvm,usb=off,vmport=off \
+-smp 4,cores=2 \
+-device ahci,id=ide \
+-usb -device usb-kbd -device usb-mouse \
+-device isa-applesmc,osk="___INSERT_OSK_HERE___" \
+-kernel enoch_rev2839_boot \
+-smbios type=2 \
+-device ioh3420,bus=pcie.0,addr=1c.0,multifunction=on,port=1,chassis=1,id=root.1 \
+-device vfio-pci,host=01:00.0,id=pci-nvidia,bus=root.1,addr=00.0,multifunction=on,x-vga=on \
+-device ide-drive,bus=ide.2,drive=MacHDD \
+-drive id=MacHDD,if=none,file=HDD01.qcow2 \
+-netdev tap,id=net0,ifname=tap0,script=no,downscript=no,vhost=on -device e1000-82545em,netdev=net0,mac=XX:XX:XX:XX:XX:XX \
+-usb -usbdevice host:046d:c52b \
+-usb -usbdevice host:0a12:0001 \
+-monitor stdio
+
+
+tunctl -d tap0
+
+exit 0

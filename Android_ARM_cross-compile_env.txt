@@ -1,0 +1,17 @@
+#!/bin/sh
+
+export ANDROID_NDK_ROOT=/mnt/lv00/android-ndk-r11c
+
+export PATH=$PATH:$ANDROID_NDK_ROOT:$ANDROID_NDK_ROOT/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin
+
+export CC=`eval ndk-which gcc`
+export CXX=`eval ndk-which g++`
+export LD=`eval ndk-which ld`
+export AR=`eval ndk-which ar`
+export RANLIB=`eval ndk-which ranlib`
+export STRIP=`eval ndk-which strip`
+export SYSROOT=$ANDROID_NDK_ROOT/platforms/android-24/arch-arm/
+export CFLAGS=--sysroot=$SYSROOT
+export CXXFLAGS=--sysroot=$SYSROOT
+export CPPFLAGS=--sysroot=$SYSROOT
+export LDFLAGS=--sysroot=$SYSROOT
