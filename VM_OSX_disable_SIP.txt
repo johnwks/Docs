@@ -1,0 +1,26 @@
+http://osxarena.com/2015/10/guide-details-apples-system-integrity-protection-sip-for-hackintosh/
+http://pixelcog.com/blog/2016/disable-ds_store-in-el-capitan/
+
+Disable SIP and install Asepsis (to get rid of .DS_Store file creation)
+
+- Edit org.chameleon.plist and include :-
+
+ <key>CsrActiveConfig</key>
+    <string>3</string>
+
+- Reboot
+
+- Create files :-
+
+touch ~/.no-asepsis-os-restriction
+touch ~/.asepsis-suppress-update-errors
+
+- Install Asepsis using brew/cask (or via GUI):-
+
+brew cask install asepsis
+
+- Reboot
+
+- Check status
+
+asepsisctl diagnose
