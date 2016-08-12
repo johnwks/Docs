@@ -1,0 +1,28 @@
+When a new kernel has been released :-
+
+1) Boot using the new kernel (non KVM PCI passthrough mode).
+
+2) Hide nvidia modules :-
+
+    mkdir /tmp/backup
+    mv /lib/modules/X.X.X-generic/updates/dkms/nvidia* /tmp/backup
+    depmod -a
+
+3) Point /etc/initramfs-tools/modules to KVM version.
+
+4) Create initrd without nvidia drivers :-
+
+    mkinitramfs -o /boot/initrd.img-X.X.X-generic.kvm-pcipassthrough
+
+5) Point /etc/initramfs-tools/modules back to original.
+
+6) Restore nvidia modules :-
+
+    mv /tmp/backup/* /lib/modules/X.X.X-generic/updates/dkms/
+    depmod -a
+
+7) Edit /etc/grub.d/40_custom to point to new kernel.
+
+8) update-grub2
+
+9) Boot using new kernel with KVM PCI passthrough. Should NOT have any nvidia* modules loaded.
