@@ -18,4 +18,12 @@ TimeoutStartSec=10sec
 
 # Install additional packages
 
-apt-get install iperf iperf3 tcpdump
+apt-get install iperf iperf3 tcpdump traceroute
+
+# Disable auto update
+
+apt-get remove unattended-upgrades
+
+# edit /etc/apt/apt.conf.d/10periodic & set :-
+# APT::Periodic::Update-Package-Lists "0";
+
