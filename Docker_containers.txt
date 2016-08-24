@@ -1,0 +1,31 @@
+
+# /etc/systemd/system/docker-influxdb.service
+
+[Unit]
+Description=Docker container - InfluxDB
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/docker run --rm -p 8083:8083 -p 8086:8086 -e INFLUXDB_REPORTING_DISABLED=true -v /home/jkswong/data/influxdb:/var/lib/influxdb influxdb
+ExecStop=/usr/bin/docker stop -t 2 influxdb
+
+[Install]
+WantedBy=default.target
+
+
+# /etc/systemd/system/docker-grafana.service
+
+[Unit]
+Description=Docker container - Grafana
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/docker run --rm -i -p 3000:3000 -e GF_AUTH_ANONYMOUS_ENABLED=true -v /home/jkswong/data/grafana:/var/lib/grafana grafana/grafana
+ExecStop=/usr/bin/docker stop -t 2 grafana/grafana
+
+[Install]
+WantedBy=default.target
